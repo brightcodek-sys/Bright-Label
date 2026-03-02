@@ -4,17 +4,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartCountElement = document.getElementById('cart-count');
     const productCards = document.querySelectorAll('.product-card');
 
+    // helper that centralizes cart logic
+    function addToCart(card) {
+        count++;
+        if (cartCountElement) cartCountElement.innerText = count;
+        const productName = card.querySelector('h3').innerText;
+        showNotification(`${productName} added to cart!`);
+    }
+
     productCards.forEach(card => {
-        // Add a click event to the whole card (or a specific button if you add one)
         card.style.cursor = 'pointer';
-        card.addEventListener('click', () => {
-            count++;
-            cartCountElement.innerText = count;
-            
-            // Visual feedback
-            const productName = card.querySelector('h3').innerText;
-            showNotification(`${productName} added to cart!`);
-        });
+
+        // if card has a specific button, listen separately so we can stop propagation
+        const btn = card.querySelector('button');
+        if (btn) {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                addToCart(card);
+            });
+        }
+
+        card.addEventListener('click', () => addToCart(card));
     });
 
     // --- 2. Sticky Header Effect ---
@@ -28,6 +38,33 @@ document.addEventListener('DOMContentLoaded', () => {
             header.style.boxShadow = 'none';
         }
     });
+
+    // --- 1a. Shop filtering (only present on shop page) ---
+    const filterButtons = document.querySelectorAll('.filters button');
+    if (filterButtons.length) {
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const category = btn.innerText.toLowerCase();
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                productCards.forEach(card => {
+                    const cardCat = card.dataset.category;
+                    const onSale = card.dataset.sale === 'true';
+
+                    if (
+                        category === 'all' ||
+                        cardCat === category ||
+                        (category === 'sale' && onSale)
+                    ) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
 
     // --- 3. Newsletter Submission ---
     const newsletterBtn = document.querySelector('.newsletter button');

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop | Bright Label Boutique</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">BRIGHT LABEL BOUTIQUE</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="#">New Arrivals</a>
+        <a href="#">Collections</a>
+        <a href="#">Best Sellers</a>
+    </nav>
+    <div class="icons">
+        🛒 (<span id="cart-count">0</span>)
+    </div>
+</header>
+
+<main class="shop-page">
+    <section class="section">
+        <h1>Shop All</h1>
+        <div class="filters">
+            <button class="btn btn-small active">All</button>
+            <button class="btn btn-small">Clothing</button>
+            <button class="btn btn-small">Accessories</button>
+            <button class="btn btn-small">Sale</button>
+        </div>
+        <div class="grid">
+            <!-- Example product cards, repeat as needed -->
+            <div class="product-card" data-category="clothing">
+                <img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=500&q=80" alt="Oversized Graphic Tee">
+                <h3>Oversized Graphic Tee</h3>
+                <p class="price">$32.00</p>
+                <button class="btn btn-small">Add to Cart</button>
+            </div>
+            <div class="product-card" data-category="accessories">
+                <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80" alt="Gold Hoop Earrings">
+                <h3>Gold Hoop Earrings</h3>
+                <p class="price">$22.00</p>
+                <button class="btn btn-small">Add to Cart</button>
+            </div>
+            <div class="product-card" data-category="clothing" data-sale="true">
+                <img src="https://images.unsplash.com/photo-1582543905775-6d24b1e0d33b?auto=format&fit=crop&w=500&q=80" alt="Canvas Sneakers">
+                <h3>Canvas Sneakers</h3>
+                <p class="price">$58.00</p>
+                <button class="btn btn-small">Add to Cart</button>
+            </div>
+            <!-- Additional product cards go here -->
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="newsletter">
+        <h3>Join the Inner Circle</h3>
+        <p>Get 15% off your first order.</p>
+        <div class="input-group">
+            <input type="email" placeholder="yourname@email.com">
+            <button class="btn btn-small">Join</button>
+        </div>
+    </div>
+    <p class="copyright">&copy; 2026 Bright Label Boutique. Style with a Spark.</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

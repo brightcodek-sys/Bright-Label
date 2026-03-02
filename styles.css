@@ -167,6 +167,19 @@ footer input {
     letter-spacing: 1px;
 }
 
+/* filters */
+.filters {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.filters .btn.active {
+    background: var(--primary);
+    color: var(--white);
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 768px) {
     nav {
