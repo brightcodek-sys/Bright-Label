@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Oversized Graphic Tee",
+    "price": 32,
+    "category": "clothing",
+    "sale": false,
+    "trending": true,
+    "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=500&q=80"
+  },
+  {
+    "id": 2,
+    "name": "Gold Hoop Earrings",
+    "price": 22,
+    "category": "accessories",
+    "sale": false,
+    "trending": true,
+    "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80"
+  },
+  {
+    "id": 3,
+    "name": "Canvas Sneakers",
+    "price": 58,
+    "category": "clothing",
+    "sale": true,
+    "trending": true,
+    "image": "https://images.unsplash.com/photo-1582543905775-6d24b1e0d33b?auto=format&fit=crop&w=500&q=80"
+  },
+  {
+    "id": 4,
+    "name": "Minimalist Leather Wallet",
+    "price": 45,
+    "category": "accessories",
+    "sale": false,
+    "trending": false,
+    "image": "https://images.unsplash.com/photo-1617135731177-cdc1e5578751?auto=format&fit=crop&w=500&q=80"
+  }
+]

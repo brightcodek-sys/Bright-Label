@@ -1,33 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. Cart Functionality ---
-    let count = 0;
     const cartCountElement = document.getElementById('cart-count');
-    const productCards = document.querySelectorAll('.product-card');
+    let cartCount = 0;
 
-    // helper that centralizes cart logic
-    function addToCart(card) {
-        count++;
-        if (cartCountElement) cartCountElement.innerText = count;
-        const productName = card.querySelector('h3').innerText;
-        showNotification(`${productName} added to cart!`);
-    }
+    // load products data and render pages
+    fetch('products.json')
+        .then(res => res.json())
+        .then(products => {
+            renderShop(products);
+            renderTrending(products);
+        })
+        .catch(err => console.error('Failed to load products:', err));
 
-    productCards.forEach(card => {
-        card.style.cursor = 'pointer';
-
-        // if card has a specific button, listen separately so we can stop propagation
-        const btn = card.querySelector('button');
-        if (btn) {
-            btn.addEventListener('click', e => {
-                e.stopPropagation();
-                addToCart(card);
-            });
-        }
-
-        card.addEventListener('click', () => addToCart(card));
-    });
-
-    // --- 2. Sticky Header Effect ---
+    // sticky header remains unchanged
     const header = document.querySelector('header');
     window.addEventListener('scroll', () => {
         if (window.scrollY > 50) {
@@ -39,19 +23,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 1a. Shop filtering (only present on shop page) ---
-    const filterButtons = document.querySelectorAll('.filters button');
-    if (filterButtons.length) {
+    // newsletter submission
+    const newsletterBtn = document.querySelector('.newsletter button');
+    const emailInput = document.querySelector('.newsletter input');
+
+    if (newsletterBtn && emailInput) {
+        newsletterBtn.addEventListener('click', e => {
+            e.preventDefault();
+            const email = emailInput.value;
+
+            if (validateEmail(email)) {
+                alert(`Thanks for joining, ${email}! Your 15% discount code is: BRIGHT15`);
+                emailInput.value = '';
+            } else {
+                alert('Please enter a valid email address.');
+            }
+        });
+    }
+
+    // ---------- rendering helpers ----------
+    function renderShop(products) {
+        const grid = document.getElementById('product-grid');
+        if (!grid) return;
+
+        products.forEach(p => grid.appendChild(createCard(p)));
+        const cards = grid.querySelectorAll('.product-card');
+        attachCardListeners(cards);
+        attachFilterLogic(cards);
+    }
+
+    function renderTrending(products) {
+        const grid = document.getElementById('trending-grid');
+        if (!grid) return;
+
+        products
+            .filter(p => p.trending)
+            .forEach(p => grid.appendChild(createCard(p)));
+
+        const cards = grid.querySelectorAll('.product-card');
+        attachCardListeners(cards);
+    }
+
+    function createCard(p) {
+        const div = document.createElement('div');
+        div.className = 'product-card';
+        div.dataset.category = p.category;
+        if (p.sale) div.dataset.sale = 'true';
+
+        div.innerHTML = `
+      <img src="${p.image}" alt="${p.name}">
+      <h3>${p.name}</h3>
+      <p class="price">$${p.price.toFixed(2)}</p>
+      <button class="btn btn-small">Add to Cart</button>
+    `;
+        return div;
+    }
+
+    function attachCardListeners(cardNodes) {
+        cardNodes.forEach(card => {
+            card.style.cursor = 'pointer';
+            const btn = card.querySelector('button');
+            const addToCart = () => {
+                cartCount++;
+                if (cartCountElement) cartCountElement.innerText = cartCount;
+                showNotification(`${card.querySelector('h3').innerText} added to cart!`);
+            };
+
+            if (btn) {
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    addToCart();
+                });
+            }
+            card.addEventListener('click', addToCart);
+        });
+    }
+
+    function attachFilterLogic(cardNodes) {
+        const filterButtons = document.querySelectorAll('.filters button');
+        if (!filterButtons.length) return;
+
         filterButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const category = btn.innerText.toLowerCase();
                 filterButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
 
-                productCards.forEach(card => {
+                cardNodes.forEach(card => {
                     const cardCat = card.dataset.category;
                     const onSale = card.dataset.sale === 'true';
-
                     if (
                         category === 'all' ||
                         cardCat === category ||
@@ -66,23 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. Newsletter Submission ---
-    const newsletterBtn = document.querySelector('.newsletter button');
-    const emailInput = document.querySelector('.newsletter input');
-
-    newsletterBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const email = emailInput.value;
-
-        if (validateEmail(email)) {
-            alert(`Thanks for joining, ${email}! Your 15% discount code is: BRIGHT15`);
-            emailInput.value = '';
-        } else {
-            alert('Please enter a valid email address.');
-        }
-    });
-
-    // --- Helper Functions ---
+    // --- helper utilities ---
     function validateEmail(email) {
         return String(email)
             .toLowerCase()
@@ -90,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNotification(message) {
-        // Simple toast notification logic
         const toast = document.createElement('div');
         toast.innerText = message;
         toast.style.cssText = `
@@ -106,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
             transition: opacity 0.5s;
         `;
         document.body.appendChild(toast);
-        
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 500);
