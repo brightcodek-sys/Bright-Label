@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const cartCountElement = document.getElementById('cart-count');
     let cartCount = 0;
+    let cart = [];
 
     // --- product storage helpers (used by admin page) ---
     function loadStoredProducts() {
@@ -12,6 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const arr = loadStoredProducts();
         arr.push(prod);
         localStorage.setItem('extraProducts', JSON.stringify(arr));
+    }
+
+    function deleteProduct(productId) {
+        let arr = loadStoredProducts();
+        arr = arr.filter(p => p.id !== productId);
+        localStorage.setItem('extraProducts', JSON.stringify(arr));
+    }
+
+    // --- order storage helpers ---
+    function loadOrders() {
+        const raw = localStorage.getItem('customerOrders');
+        return raw ? JSON.parse(raw) : [];
+    }
+
+    function saveOrder(order) {
+        const orders = loadOrders();
+        orders.push(order);
+        localStorage.setItem('customerOrders', JSON.stringify(orders));
     }
 
     // load products data and render pages (merge with any stored extras)
@@ -98,9 +117,20 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.cursor = 'pointer';
             const btn = card.querySelector('button');
             const addToCart = () => {
+                const productName = card.querySelector('h3').innerText;
+                const productPrice = parseFloat(card.querySelector('.price').innerText.replace('$', ''));
+                
                 cartCount++;
                 if (cartCountElement) cartCountElement.innerText = cartCount;
-                showNotification(`${card.querySelector('h3').innerText} added to cart!`);
+                
+                // Create product object for cart tracking
+                const product = {
+                    name: productName,
+                    price: productPrice
+                };
+                cart.push(product);
+                
+                showNotification(`${productName} added to cart!`);
             };
 
             if (btn) {
@@ -185,8 +215,56 @@ document.addEventListener('DOMContentLoaded', () => {
         [...adminList.querySelectorAll('div')].forEach(n => n.remove());
         loadStoredProducts().forEach(p => {
             const row = document.createElement('div');
-            row.innerText = `${p.name} - $${p.price.toFixed(2)}`;
+            row.style.cssText = 'padding: 10px; border: 1px solid #ddd; margin-bottom: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;';
+            
+            const info = document.createElement('span');
+            info.innerText = `${p.name} - $${p.price.toFixed(2)} (${p.category})`;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-small';
+            deleteBtn.innerText = 'Delete';
+            deleteBtn.style.cssText = 'background: #d32f2f; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Delete "${p.name}"?`)) {
+                    deleteProduct(p.id);
+                    renderAdminList();
+                    location.reload();
+                }
+            });
+            
+            row.appendChild(info);
+            row.appendChild(deleteBtn);
             adminList.appendChild(row);
+        });
+    }
+
+    function renderOrdersList() {
+        const ordersList = document.getElementById('orders-list');
+        if (!ordersList) return;
+
+        ordersList.innerHTML = '';
+        const orders = loadOrders();
+        
+        if (orders.length === 0) {
+            ordersList.innerHTML = '<p style="color: #999;">No orders yet.</p>';
+            return;
+        }
+
+        orders.forEach((order, idx) => {
+            const orderDiv = document.createElement('div');
+            orderDiv.style.cssText = 'padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; border-radius: 5px; background: #f9f9f9;';
+            
+            const items = order.items.map(item => `<li>${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}</li>`).join('');
+            
+            orderDiv.innerHTML = `
+                <strong>Order #${idx + 1}</strong><br>
+                <small style="color: #999;">Date: ${new Date(order.timestamp).toLocaleString()}</small><br>
+                <strong>Customer Email:</strong> ${order.email}<br>
+                <strong>Items:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">${items}</ul>
+                <strong>Total: $${order.total.toFixed(2)}</strong>
+            `;
+            ordersList.appendChild(orderDiv);
         });
     }
 
@@ -194,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginSection) loginSection.style.display = 'none';
         if (adminForm) adminForm.style.display = '';
         renderAdminList();
+        renderOrdersList();
     }
 
     if (loginSection && loginBtn && passwordInput) {
@@ -267,4 +346,48 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAdminList();
         });
     }
+
+    // Create checkout button on shop page
+    const shopPage = document.querySelector('.shop-page');
+    if (shopPage) {
+        const checkoutBtn = document.createElement('button');
+        checkoutBtn.className = 'btn';
+        checkoutBtn.id = 'checkout-btn';
+        checkoutBtn.innerText = 'Checkout';
+        checkoutBtn.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000; padding: 12px 25px; background: #1a1a1a; color: white;';
+        
+        checkoutBtn.addEventListener('click', () => {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+
+            const email = prompt('Please enter your email to complete the order:');
+            if (!email) return;
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const order = {
+                email,
+                items: cart.map(item => ({ ...item, quantity: 1 })),
+                total,
+                timestamp: new Date().toISOString()
+            };
+
+            saveOrder(order);
+            cart = [];
+            cartCount = 0;
+            if (cartCountElement) cartCountElement.innerText = cartCount;
+            
+            // Refresh orders display if admin page is open
+            renderOrdersList();
+            
+            alert(`Order placed! Total: $${total.toFixed(2)}\n\nOrder confirmation sent to ${email}`);
+        });
+
+        document.body.appendChild(checkoutBtn);
+    }
+
+    // Display orders on admin page
+    renderOrdersList();
 });
+
