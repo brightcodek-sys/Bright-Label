@@ -3,44 +3,51 @@ document.addEventListener('DOMContentLoaded', () => {
     let cartCount = 0;
     let cart = [];
 
-    // --- product storage helpers (used by admin page) ---
-    function loadStoredProducts() {
-        const raw = localStorage.getItem('extraProducts');
-        return raw ? JSON.parse(raw) : [];
+    // --- product storage helpers (server-backed) ---
+    async function fetchProducts() {
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error('Failed to load products');
+        return res.json();
     }
 
-    function saveProduct(prod) {
-        const arr = loadStoredProducts();
-        arr.push(prod);
-        localStorage.setItem('extraProducts', JSON.stringify(arr));
+    async function saveProduct(prod) {
+        const res = await fetch('/api/products', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(prod)
+        });
+        if (!res.ok) throw new Error('Failed to save product');
+        return res.json();
     }
 
-    function deleteProduct(productId) {
-        let arr = loadStoredProducts();
-        arr = arr.filter(p => p.id !== productId);
-        localStorage.setItem('extraProducts', JSON.stringify(arr));
+    async function deleteProduct(productId) {
+        const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete product');
+        return res.json();
     }
 
-    // --- order storage helpers ---
-    function loadOrders() {
-        const raw = localStorage.getItem('customerOrders');
-        return raw ? JSON.parse(raw) : [];
+    // --- order helpers (server-backed) ---
+    async function fetchOrders() {
+        const res = await fetch('/api/orders');
+        if (!res.ok) throw new Error('Failed to load orders');
+        return res.json();
     }
 
-    function saveOrder(order) {
-        const orders = loadOrders();
-        orders.push(order);
-        localStorage.setItem('customerOrders', JSON.stringify(orders));
+    async function saveOrder(order) {
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(order)
+        });
+        if (!res.ok) throw new Error('Failed to save order');
+        return res.json();
     }
 
-    // load products data and render pages (merge with any stored extras)
-    fetch('products.json')
-        .then(res => res.json())
+    // load products data from server and render pages
+    fetchProducts()
         .then(products => {
-            const extras = loadStoredProducts();
-            const allProducts = products.concat(extras);
-            renderShop(allProducts);
-            renderTrending(allProducts);
+            renderShop(products);
+            renderTrending(products);
         })
         .catch(err => console.error('Failed to load products:', err));
 
@@ -123,12 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartCount++;
                 if (cartCountElement) cartCountElement.innerText = cartCount;
                 
-                // Create product object for cart tracking
-                const product = {
-                    name: productName,
-                    price: productPrice
-                };
-                cart.push(product);
+                // add or increment existing item in cart
+                const existing = cart.find(item => item.name === productName && item.price === productPrice);
+                if (existing) {
+                    existing.quantity++;
+                } else {
+                    cart.push({ name: productName, price: productPrice, quantity: 1 });
+                }
                 
                 showNotification(`${productName} added to cart!`);
             };
@@ -209,11 +217,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('admin-password');
     const loginError = document.getElementById('login-error');
 
-    function renderAdminList() {
+    async function renderAdminList() {
         if (!adminList) return;
         // clear old items (keep heading)
         [...adminList.querySelectorAll('div')].forEach(n => n.remove());
-        loadStoredProducts().forEach(p => {
+        let products = [];
+        try {
+            products = await fetchProducts();
+        } catch (e) {
+            adminList.innerHTML = '<p style="color: red;">Could not load products.</p>';
+            return;
+        }
+        
+        products.forEach(p => {
             const row = document.createElement('div');
             row.style.cssText = 'padding: 10px; border: 1px solid #ddd; margin-bottom: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;';
             
@@ -224,11 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteBtn.className = 'btn btn-small';
             deleteBtn.innerText = 'Delete';
             deleteBtn.style.cssText = 'background: #d32f2f; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;';
-            deleteBtn.addEventListener('click', () => {
+            deleteBtn.addEventListener('click', async () => {
                 if (confirm(`Delete "${p.name}"?`)) {
-                    deleteProduct(p.id);
-                    renderAdminList();
-                    location.reload();
+                    try {
+                        await deleteProduct(p.id);
+                        renderAdminList();
+                        location.reload();
+                    } catch (err) {
+                        alert('Failed to delete product');
+                    }
                 }
             });
             
@@ -238,12 +258,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderOrdersList() {
+    async function renderOrdersList() {
         const ordersList = document.getElementById('orders-list');
         if (!ordersList) return;
 
         ordersList.innerHTML = '';
-        const orders = loadOrders();
+        let orders = [];
+        try {
+            orders = await fetchOrders();
+        } catch (e) {
+            ordersList.innerHTML = '<p style="color: red;">Could not retrieve orders.</p>';
+            return;
+        }
         
         if (orders.length === 0) {
             ordersList.innerHTML = '<p style="color: #999;">No orders yet.</p>';
@@ -315,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (adminForm) {
-        adminForm.addEventListener('submit', e => {
+        adminForm.addEventListener('submit', async e => {
             e.preventDefault();
             const name = document.getElementById('name').value.trim();
             const price = parseFloat(document.getElementById('price').value);
@@ -338,12 +364,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 image: uploadedImageData
             };
 
-            saveProduct(newProd);
-            adminFeedback.innerText = 'Product added!';
-            adminForm.reset();
-            uploadedImageData = null;
-            if (imagePreview) imagePreview.innerHTML = '';
-            renderAdminList();
+            try {
+                await saveProduct(newProd);
+                adminFeedback.innerText = 'Product added!';
+                adminForm.reset();
+                uploadedImageData = null;
+                if (imagePreview) imagePreview.innerHTML = '';
+                renderAdminList();
+                // reload any open page to reflect new product globally
+                location.reload();
+            } catch (err) {
+                adminFeedback.innerText = 'Failed to save product.';
+            }
         });
     }
 
@@ -365,10 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = prompt('Please enter your email to complete the order:');
             if (!email) return;
 
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
             const order = {
                 email,
-                items: cart.map(item => ({ ...item, quantity: 1 })),
+                items: cart, // already has quantity
                 total,
                 timestamp: new Date().toISOString()
             };
