@@ -2,12 +2,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartCountElement = document.getElementById('cart-count');
     let cartCount = 0;
 
-    // load products data and render pages
+    // --- product storage helpers (used by admin page) ---
+    function loadStoredProducts() {
+        const raw = localStorage.getItem('extraProducts');
+        return raw ? JSON.parse(raw) : [];
+    }
+
+    function saveProduct(prod) {
+        const arr = loadStoredProducts();
+        arr.push(prod);
+        localStorage.setItem('extraProducts', JSON.stringify(arr));
+    }
+
+    // load products data and render pages (merge with any stored extras)
     fetch('products.json')
         .then(res => res.json())
         .then(products => {
-            renderShop(products);
-            renderTrending(products);
+            const extras = loadStoredProducts();
+            const allProducts = products.concat(extras);
+            renderShop(allProducts);
+            renderTrending(allProducts);
         })
         .catch(err => console.error('Failed to load products:', err));
 
@@ -153,5 +167,54 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 500);
         }, 3000);
+    }
+
+    // ---------- admin page logic ----------
+    const adminForm = document.getElementById('admin-form');
+    const adminFeedback = document.getElementById('admin-feedback');
+    const adminList = document.getElementById('admin-list');
+
+    function renderAdminList() {
+        if (!adminList) return;
+        // clear old items (keep heading)
+        [...adminList.querySelectorAll('div')].forEach(n => n.remove());
+        loadStoredProducts().forEach(p => {
+            const row = document.createElement('div');
+            row.innerText = `${p.name} - $${p.price.toFixed(2)}`;
+            adminList.appendChild(row);
+        });
+    }
+
+    if (adminForm) {
+        renderAdminList();
+        adminForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const price = parseFloat(document.getElementById('price').value);
+            const category = document.getElementById('category').value;
+            const sale = document.getElementById('sale').checked;
+            const trending = document.getElementById('trending').checked;
+            const image = document.getElementById('image').value.trim();
+
+            if (!name || !image || isNaN(price)) {
+                adminFeedback.innerText = 'Please fill out the required fields.';
+                return;
+            }
+
+            const newProd = {
+                id: Date.now(),
+                name,
+                price,
+                category,
+                sale,
+                trending,
+                image
+            };
+
+            saveProduct(newProd);
+            adminFeedback.innerText = 'Product added!';
+            adminForm.reset();
+            renderAdminList();
+        });
     }
 });

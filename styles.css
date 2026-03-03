@@ -180,6 +180,32 @@ footer input {
     color: var(--white);
 }
 
+/* --- Admin form styles --- */
+.admin-form {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+}
+.admin-form label {
+    display: block;
+    margin: 15px 0 5px;
+    font-weight: bold;
+}
+.admin-form input,
+.admin-form select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+#admin-list {
+    margin-top: 30px;
+}
+#admin-list div {
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 768px) {
     nav {
