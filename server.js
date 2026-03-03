@@ -66,14 +66,36 @@ app.get('/api/products', (req, res) => {
 
 app.post('/api/products', authenticate, (req, res) => {
     const prod = req.body;
-    if (!prod.name || typeof prod.price !== 'number' || !prod.category || !prod.image) {
-        return res.status(400).json({ error: 'Invalid product payload' });
+    console.log('POST /api/products', JSON.stringify(prod, null, 2));
+    
+    if (!prod.name) {
+        console.error('Missing name');
+        return res.status(400).json({ error: 'Missing product name' });
     }
-    const products = readJSON('products.json');
-    prod.id = prod.id || Date.now();
-    products.push(prod);
-    writeJSON('products.json', products);
-    res.status(201).json(prod);
+    if (typeof prod.price !== 'number' || isNaN(prod.price)) {
+        console.error('Invalid price:', prod.price, typeof prod.price);
+        return res.status(400).json({ error: 'Valid price (number) required' });
+    }
+    if (!prod.category) {
+        console.error('Missing category');
+        return res.status(400).json({ error: 'Missing product category' });
+    }
+    if (!prod.image) {
+        console.error('Missing image');
+        return res.status(400).json({ error: 'Missing product image' });
+    }
+    
+    try {
+        const products = readJSON('products.json');
+        prod.id = prod.id || Date.now();
+        products.push(prod);
+        writeJSON('products.json', products);
+        console.log('Product saved successfully:', prod.id);
+        res.status(201).json(prod);
+    } catch (err) {
+        console.error('Error writing products.json:', err);
+        res.status(500).json({ error: 'Server error: ' + err.message });
+    }
 });
 
 app.delete('/api/products/:id', authenticate, (req, res) => {

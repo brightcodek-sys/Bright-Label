@@ -22,7 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
             headers,
             body: JSON.stringify(prod)
         });
-        if (!res.ok) throw new Error('Failed to save product');
+        if (!res.ok) {
+            let message = 'Failed to save product';
+            try {
+                const body = await res.json();
+                message = body.error || message;
+            } catch {}
+            console.error('saveProduct error', res.status, message);
+            throw new Error(message);
+        }
         return res.json();
     }
 
@@ -340,11 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ password: val })
                     });
-                    if (!res.ok) throw new Error('bad');
+                    if (!res.ok) {
+                        const errBody = await res.json().catch(() => ({}));
+                        throw new Error(errBody.error || 'Login failed');
+                    }
                     const { token } = await res.json();
                     sessionStorage.setItem('adminToken', token);
                     showAdminInterface();
                 } catch (err) {
+                    console.error('login error', err);
                     loginError.innerText = 'Incorrect password';
                 }
             });
@@ -406,7 +418,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // reload any open page to reflect new product globally
                 location.reload();
             } catch (err) {
-                adminFeedback.innerText = 'Failed to save product.';
+                console.error('product save failed', err);
+                adminFeedback.innerText = `Error: ${err.message}`;
             }
         });
     }
