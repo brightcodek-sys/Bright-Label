@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------- admin page logic / secure login ----------
-    const ADMIN_PASSWORD = '505060'; // change as needed; not truly secure in static site
+    const ADMIN_PASSWORD = '0000'; // change as needed; not truly secure in static site
     const adminForm = document.getElementById('admin-form');
     const adminFeedback = document.getElementById('admin-feedback');
     const adminList = document.getElementById('admin-list');
