@@ -169,10 +169,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    // ---------- admin page logic ----------
+    // ---------- admin page logic / secure login ----------
+    const ADMIN_PASSWORD = '505060'; // change as needed; not truly secure in static site
     const adminForm = document.getElementById('admin-form');
     const adminFeedback = document.getElementById('admin-feedback');
     const adminList = document.getElementById('admin-list');
+    const loginSection = document.getElementById('login-section');
+    const loginBtn = document.getElementById('admin-login-btn');
+    const passwordInput = document.getElementById('admin-password');
+    const loginError = document.getElementById('login-error');
 
     function renderAdminList() {
         if (!adminList) return;
@@ -185,8 +190,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (adminForm) {
+    function showAdminInterface() {
+        if (loginSection) loginSection.style.display = 'none';
+        if (adminForm) adminForm.style.display = '';
         renderAdminList();
+    }
+
+    if (loginSection && loginBtn && passwordInput) {
+        // already authenticated?
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            showAdminInterface();
+        } else {
+            loginBtn.addEventListener('click', e => {
+                e.preventDefault();
+                const val = passwordInput.value;
+                if (val === ADMIN_PASSWORD) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    showAdminInterface();
+                } else {
+                    loginError.innerText = 'Incorrect password';
+                }
+            });
+        }
+    }
+
+    if (adminForm) {
         adminForm.addEventListener('submit', e => {
             e.preventDefault();
             const name = document.getElementById('name').value.trim();

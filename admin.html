@@ -23,7 +23,17 @@
 <main class="shop-page">
     <section class="section">
         <h1>Product Administration</h1>
-        <form id="admin-form" class="admin-form">
+        <!-- login section shown first -->
+        <div id="login-section" class="admin-login">
+            <h2>Administrator Login</h2>
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password">
+            <button class="btn" id="admin-login-btn">Enter</button>
+            <div id="login-error" style="color: red; margin-top: 10px;"></div>
+        </div>
+
+        <!-- product form hidden until authenticated -->
+        <form id="admin-form" class="admin-form" style="display:none;">
             <label for="name">Name</label>
             <input type="text" id="name" required>
 

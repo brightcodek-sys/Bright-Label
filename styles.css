@@ -206,6 +206,23 @@ footer input {
     border-bottom: 1px solid #ddd;
 }
 
+/* login section */
+.admin-login {
+    max-width: 400px;
+    margin: 0 auto 30px;
+    text-align: left;
+}
+.admin-login label {
+    display: block;
+    margin: 10px 0 5px;
+}
+.admin-login input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 768px) {
     nav {
