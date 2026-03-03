@@ -2,9 +2,16 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// load secret and admin password from environment or defaults
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2b$10$YmkdK4yQWyTXfQFtskOtDOHxQTYOsGcrANqXO2lR/5e0inr8aZ6b2';
+// the default hash corresponds to plaintext '505060' for backwards compatibility
 
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
@@ -24,26 +31,52 @@ function writeJSON(file, data) {
     fs.writeFileSync(path.join(__dirname, file), JSON.stringify(data, null, 2), 'utf8');
 }
 
+// authentication middleware
+function authenticate(req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing token' });
+    }
+    const token = auth.slice(7);
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.admin = payload;
+        next();
+    } catch (e) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+}
+
+// login endpoint
+app.post('/api/login', async (req, res) => {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password required' });
+    const match = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!match) return res.status(401).json({ error: 'Bad credentials' });
+
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
+    res.json({ token });
+});
+
 // PRODUCTS API
 app.get('/api/products', (req, res) => {
     const products = readJSON('products.json');
     res.json(products);
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', authenticate, (req, res) => {
     const prod = req.body;
     if (!prod.name || typeof prod.price !== 'number' || !prod.category || !prod.image) {
         return res.status(400).json({ error: 'Invalid product payload' });
     }
     const products = readJSON('products.json');
-    // assign id if not provided
     prod.id = prod.id || Date.now();
     products.push(prod);
     writeJSON('products.json', products);
     res.status(201).json(prod);
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', authenticate, (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
     let products = readJSON('products.json');
@@ -57,7 +90,7 @@ app.delete('/api/products/:id', (req, res) => {
 });
 
 // ORDERS API
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', authenticate, (req, res) => {
     const orders = readJSON('orders.json');
     res.json(orders);
 });

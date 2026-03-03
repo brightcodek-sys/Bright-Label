@@ -5,15 +5,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- product storage helpers (server-backed) ---
     async function fetchProducts() {
-        const res = await fetch('/api/products');
+        const headers = {};
+        const token = sessionStorage.getItem('adminToken');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/products', { headers });
         if (!res.ok) throw new Error('Failed to load products');
         return res.json();
     }
 
     async function saveProduct(prod) {
+        const headers = {'Content-Type': 'application/json'};
+        const token = sessionStorage.getItem('adminToken');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch('/api/products', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers,
             body: JSON.stringify(prod)
         });
         if (!res.ok) throw new Error('Failed to save product');
@@ -21,14 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deleteProduct(productId) {
-        const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+        const headers = {};
+        const token = sessionStorage.getItem('adminToken');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`/api/products/${productId}`, { method: 'DELETE', headers });
         if (!res.ok) throw new Error('Failed to delete product');
         return res.json();
     }
 
     // --- order helpers (server-backed) ---
     async function fetchOrders() {
-        const res = await fetch('/api/orders');
+        const headers = {};
+        const token = sessionStorage.getItem('adminToken');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/orders', { headers });
         if (!res.ok) throw new Error('Failed to load orders');
         return res.json();
     }
@@ -297,22 +309,42 @@ document.addEventListener('DOMContentLoaded', () => {
     function showAdminInterface() {
         if (loginSection) loginSection.style.display = 'none';
         if (adminForm) adminForm.style.display = '';
+        const authHeader = document.getElementById('auth-header');
+        if (authHeader) authHeader.style.display = '';
+        setupLogout();
         renderAdminList();
         renderOrdersList();
     }
 
+    function setupLogout() {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                sessionStorage.removeItem('adminToken');
+                location.reload();
+            });
+        }
+    }
+
     if (loginSection && loginBtn && passwordInput) {
-        // already authenticated?
-        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+        const existingToken = sessionStorage.getItem('adminToken');
+        if (existingToken) {
             showAdminInterface();
         } else {
-            loginBtn.addEventListener('click', e => {
+            loginBtn.addEventListener('click', async e => {
                 e.preventDefault();
                 const val = passwordInput.value;
-                if (val === ADMIN_PASSWORD) {
-                    sessionStorage.setItem('adminLoggedIn', 'true');
+                try {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: val })
+                    });
+                    if (!res.ok) throw new Error('bad');
+                    const { token } = await res.json();
+                    sessionStorage.setItem('adminToken', token);
                     showAdminInterface();
-                } else {
+                } catch (err) {
                     loginError.innerText = 'Incorrect password';
                 }
             });
