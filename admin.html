@@ -56,8 +56,10 @@
                 Trending
             </label>
 
-            <label for="image">Image URL</label>
-            <input type="url" id="image" required>
+            <label for="image">Upload Product Image</label>
+            <input type="file" id="image" accept="image/*" required>
+            <small style="color: #999; display: block; margin-top: 5px;">Accepted formats: JPG, PNG, GIF</small>
+            <div id="image-preview" style="margin-top: 10px; max-width: 200px;"></div>
 
             <button class="btn" type="submit">Add Product</button>
         </form>

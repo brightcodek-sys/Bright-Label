@@ -214,6 +214,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Image file preview
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('image-preview');
+    let uploadedImageData = null;
+
+    if (imageInput) {
+        imageInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    uploadedImageData = event.target.result;
+                    if (imagePreview) {
+                        imagePreview.innerHTML = `<img src="${uploadedImageData}" style="max-width: 100%; border-radius: 5px;">`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
     if (adminForm) {
         adminForm.addEventListener('submit', e => {
             e.preventDefault();
@@ -222,10 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const category = document.getElementById('category').value;
             const sale = document.getElementById('sale').checked;
             const trending = document.getElementById('trending').checked;
-            const image = document.getElementById('image').value.trim();
 
-            if (!name || !image || isNaN(price)) {
-                adminFeedback.innerText = 'Please fill out the required fields.';
+            if (!name || !uploadedImageData || isNaN(price)) {
+                adminFeedback.innerText = 'Please fill out the required fields and upload an image.';
                 return;
             }
 
@@ -236,12 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 category,
                 sale,
                 trending,
-                image
+                image: uploadedImageData
             };
 
             saveProduct(newProd);
             adminFeedback.innerText = 'Product added!';
             adminForm.reset();
+            uploadedImageData = null;
+            if (imagePreview) imagePreview.innerHTML = '';
             renderAdminList();
         });
     }
