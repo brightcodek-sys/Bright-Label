@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`/api/products/${productId}`, { method: 'DELETE', headers });
         if (!res.ok) throw new Error('Failed to delete product');
         return res.json();
-    }
+    }    
 
     // --- order helpers (server-backed) ---
     async function fetchOrders() {
